@@ -1,7 +1,3 @@
-from reportlab.lib import colors
-from reportlab.platypus import Paragraph
-from reportlab.lib.styles import getSampleStyleSheet
-
 def prepare_table_data(self, report_column_info, dataframe, group_colors, multi_headers):
     custom_style = self.get_custom_style()
     table_data = []
@@ -10,6 +6,7 @@ def prepare_table_data(self, report_column_info, dataframe, group_colors, multi_
     num_levels = len(multi_headers)
     num_columns = len(multi_headers[-1])
 
+    # Find how many leading columns in the first level header are empty
     empty_column = 0
     for col in multi_headers[0]:
         if col == "":
@@ -20,58 +17,61 @@ def prepare_table_data(self, report_column_info, dataframe, group_colors, multi_
     for level in range(num_levels):
         headers = multi_headers[level]
         row = []
-        styles = []
         col_idx = 0
 
         while col_idx < num_columns:
             header = headers[col_idx]
             span_count = 1
 
-            # Skip empty top-level headers before meaningful ones
-            if col_idx < empty_column and level < num_levels - 1:
-                row.append('')
+            if col_idx < empty_column and level == 0:
+                row.append("")
                 col_idx += 1
                 continue
 
-            # Count span (how many columns have the same header)
-            while (col_idx + span_count < num_columns and
-                   headers[col_idx + span_count] == header):
+            # Count how many times the header is repeated
+            while col_idx + span_count < num_columns and headers[col_idx + span_count] == header:
                 span_count += 1
 
             while len(row) <= col_idx:
-                row.append('')
+                row.append("")
 
+            # Render header
             row[col_idx] = Paragraph(f"<b>{header}</b>", custom_style)
 
-            # Background colors for first and second header levels
-            if level == 0:
-                bg_color = colors.HexColor("#A4BFEF")  # light blue
-                if header.strip() != "":
-                    styles.append(('LINEABOVE', (col_idx, level), (col_idx + span_count - 1, level), 0.5, colors.black))
-            else:
-                bg_color = colors.HexColor("#C9C3E6")  # light purple
-
-            styles.append(('BACKGROUND', (col_idx, level), (col_idx + span_count - 1, level), bg_color))
-
-            # Span
             if span_count > 1:
-                styles.append(('SPAN', (col_idx, level), (col_idx + span_count - 1, level)))
+                header_styles.append(('SPAN', (col_idx, level), (col_idx + span_count - 1, level)))
 
-            # Grid and alignment
-            styles.append(('ALIGN', (col_idx, level), (col_idx + span_count - 1, level), 'CENTER'))
-            styles.append(('VALIGN', (col_idx, level), (col_idx + span_count - 1, level), 'MIDDLE'))
+            # Get column config to apply background
+            report_config = self.config.get("reports", [{}])[0]
+            columns_config = report_config.get("columns", [])
+            column_config = next((col for col in columns_config if col.get("header") == header), None)
+            bg_color = column_config.get("bg_color") if column_config and "bg_color" in column_config else None
+
+            # Determine default background color
+            default_bg = colors.HexColor("#D3D3F3") if level == 0 else colors.HexColor("#DCE6F2")
+
+            # Skip applying background to blank top-level headers
+            if not (level == 0 and col_idx < empty_column and header == ""):
+                header_styles.append(('BACKGROUND', (col_idx, level), (col_idx + span_count - 1, level), bg_color or default_bg))
+
+            # Style text
+            header_styles.append(('TEXTCOLOR', (col_idx, level), (col_idx + span_count - 1, level), colors.white))
+            header_styles.append(('FONTNAME', (col_idx, level), (col_idx + span_count - 1, level), 'Helvetica-Bold'))
+            header_styles.append(('ALIGN', (col_idx, level), (col_idx + span_count - 1, level), 'CENTER'))
+            header_styles.append(('VALIGN', (col_idx, level), (col_idx + span_count - 1, level), 'MIDDLE'))
+
+            # Remove left and top borders for empty top-level headers
+            if level == 0 and col_idx < empty_column and header == "":
+                header_styles.append(('LINEABOVE', (col_idx, level), (col_idx + span_count - 1, level), 0, colors.white))
+                header_styles.append(('LINEBEFORE', (col_idx, level), (col_idx + span_count - 1, level), 0, colors.white))
 
             col_idx += span_count
 
         table_data.append(row)
-        header_styles.extend(styles)
 
-    # Now the data rows
-    for _, data_row in dataframe.iterrows():
-        row = [Paragraph(str(data_row.get(col['column'], '')), custom_style) for col in report_column_info]
-        table_data.append(row)
-
+    header_styles.append(('GRID', (0, 0), (-1, -1), 0.25, colors.gray))
     return table_data, header_styles
+
 
 
 def create_table_style(self, style_config):
