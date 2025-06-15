@@ -64,7 +64,7 @@ def prepare_table_data(self, report_column_info, dataframe, group_colors, multi_
 
     return table_data, header_styles
 def create_table_style(self, style_config):
-    return TableStyle([
+    style = TableStyle([
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor("#000000")),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
@@ -76,5 +76,35 @@ def create_table_style(self, style_config):
         ('TOPPADDING', (0, 0), (-1, 1), 3),
         ('BOTTOMPADDING', (0, 0), (-1, 1), 3),
         ('GRID', (0, 0), (-1, -1), 0.1, colors.gray),
-        ('BOX', (0,0), (-1,-1), 1, colors.black),  # Outer border
+        ('BOX', (0, 0), (-1, -1), 1, colors.black),
     ])
+
+    # Remove the top border for the first header row in these columns
+    no_top_border_columns = [0, 1, 2, 3, 4]  # adjust based on your column positions
+    for col in no_top_border_columns:
+        style.add('LINEABOVE', (col, 0), (col, 0), 0, colors.white)
+
+    return style
+
+def create_table_style(self, style_config):
+    style = TableStyle([
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor("#000000")),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('LINEBELOW', (0, 0), (-1, 0), 0.5, colors.black),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 8),
+        ('LEFTPADDING', (0, 0), (-1, 1), 3),
+        ('RIGHTPADDING', (0, 0), (-1, 1), 3),
+        ('TOPPADDING', (0, 0), (-1, 1), 3),
+        ('BOTTOMPADDING', (0, 0), (-1, 1), 3),
+        ('GRID', (0, 0), (-1, -1), 0.1, colors.gray),
+        ('BOX', (0, 0), (-1, -1), 1, colors.black),
+    ])
+
+    # Dynamically remove top border for specified columns
+    no_top_border_cols = style_config.get("no_top_border_columns", [])
+    for col in no_top_border_cols:
+        style.add('LINEABOVE', (col, 0), (col, 0), 0, colors.white)
+
+    return style
