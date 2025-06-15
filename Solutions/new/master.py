@@ -6,63 +6,55 @@ def prepare_table_data(self, report_column_info, dataframe, group_colors, multi_
     num_levels = len(multi_headers)
     num_columns = len(multi_headers[-1])
 
-    # Dynamically determine leading empty header cells
-    leading_empty_cols = 0
-    for col in multi_headers[0]:
-        if col.strip() == "":
-            leading_empty_cols += 1
-        else:
-            break
+    report_config = self.config.get("reports", [{}])[0]
+    columns_config = report_config.get("columns", [])
+    no_top_border_columns = report_config.get("no_top_border_columns", [])
 
-    # Create headers row-by-row
     for level in range(num_levels):
+        headers = multi_headers[level]
         row = []
+        styles = []
         col_idx = 0
+
         while col_idx < num_columns:
-            header = multi_headers[level][col_idx]
-
-            # Handle empty leading cells at the top level
-            if level == 0 and col_idx < leading_empty_cols:
-                row.append("")  # Add empty string to keep cell in layout
-                # Explicitly remove borders and background
-                header_styles.append(('LINEBEFORE', (col_idx, level), (col_idx, level), 0, colors.white))
-                header_styles.append(('LINEABOVE', (col_idx, level), (col_idx, level), 0, colors.white))
-                header_styles.append(('LINEBELOW', (col_idx, level), (col_idx, level), 0, colors.white))
-                header_styles.append(('BACKGROUND', (col_idx, level), (col_idx, level), colors.white))
-                col_idx += 1
-                continue
-
-            # Calculate horizontal span for repeated headers
+            header = headers[col_idx]
             span_count = 1
-            while (col_idx + span_count < num_columns and
-                   multi_headers[level][col_idx + span_count] == header):
+
+            # Count how many times the header is repeated
+            while (col_idx + span_count < num_columns) and (headers[col_idx + span_count] == header):
                 span_count += 1
 
+            # Append header text
             row.append(Paragraph(f"<b>{header}</b>", custom_style))
 
-            column_info = report_column_info[col_idx] if col_idx < len(report_column_info) else {}
-            column_group = column_info.get('group', 'Group1')
-            bg_color = group_colors.get(column_group, '#DCDCDC')
+            # Set background color based on header level
+            if level == 0:
+                bg_color = colors.HexColor("#DDEBF7")  # light purple for first-level
+            else:
+                bg_color = colors.HexColor("#B4C6E7")  # blue for second-level
 
-            # Apply normal header styles
-            header_styles.append(('BACKGROUND', (col_idx, level), (col_idx + span_count - 1, level), colors.HexColor(bg_color)))
-            header_styles.append(('ALIGN', (col_idx, level), (col_idx + span_count - 1, level), 'CENTER'))
-            header_styles.append(('VALIGN', (col_idx, level), (col_idx + span_count - 1, level), 'MIDDLE'))
-            header_styles.append(('TEXTCOLOR', (col_idx, level), (col_idx + span_count - 1, level), colors.black))
-
+            # Apply span
             if span_count > 1:
-                header_styles.append(('SPAN', (col_idx, level), (col_idx + span_count - 1, level)))
+                styles.append(('SPAN', (col_idx, level), (col_idx + span_count - 1, level)))
+
+            # Apply background
+            styles.append(('BACKGROUND', (col_idx, level), (col_idx + span_count - 1, level), bg_color))
+            styles.append(('TEXTCOLOR', (col_idx, level), (col_idx + span_count - 1, level), colors.white))
+            styles.append(('ALIGN', (col_idx, level), (col_idx + span_count - 1, level), 'CENTER'))
+
+            # Handle removal of top border for certain columns on second-level only
+            if level == 1:
+                col_header = header.strip()
+                if col_header in no_top_border_columns:
+                    styles.append(('LINEABOVE', (col_idx, level), (col_idx + span_count - 1, level), 0.0, colors.white))
 
             col_idx += span_count
 
         table_data.append(row)
-
-    # Populate data rows
-    for _, row_data in dataframe.iterrows():
-        data_row = [Paragraph(str(row_data[col["column"]]), custom_style) for col in report_column_info]
-        table_data.append(data_row)
+        header_styles.extend(styles)
 
     return table_data, header_styles
+
 def create_table_style(self, style_config):
     style = TableStyle([
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor("#000000")),
