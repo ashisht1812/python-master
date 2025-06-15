@@ -1,4 +1,4 @@
-def prepare_table_data(self, report_column_info, dataframe, group_colors, multi_headers):
+def prepare_table_data(self, report_column_info, dataframe, group_colors, multi_headers, no_top_border_columns=None):
     custom_style = self.get_custom_style()
     table_data = []
     header_styles = []
@@ -6,7 +6,6 @@ def prepare_table_data(self, report_column_info, dataframe, group_colors, multi_
     num_levels = len(multi_headers)
     num_columns = len(multi_headers[-1])
 
-    # Find how many leading columns in the first level header are empty
     empty_column = 0
     for col in multi_headers[0]:
         if col == "":
@@ -18,59 +17,45 @@ def prepare_table_data(self, report_column_info, dataframe, group_colors, multi_
         headers = multi_headers[level]
         row = []
         col_idx = 0
-
         while col_idx < num_columns:
             header = headers[col_idx]
             span_count = 1
 
-            if col_idx < empty_column and level == 0:
+            if col_idx < empty_column and level < num_levels - 1:
                 row.append("")
                 col_idx += 1
                 continue
 
-            # Count how many times the header is repeated
-            while col_idx + span_count < num_columns and headers[col_idx + span_count] == header:
+            while (col_idx + span_count < num_columns and
+                   headers[col_idx + span_count] == header):
                 span_count += 1
 
             while len(row) <= col_idx:
                 row.append("")
 
-            # Render header
             row[col_idx] = Paragraph(f"<b>{header}</b>", custom_style)
-
             if span_count > 1:
                 header_styles.append(('SPAN', (col_idx, level), (col_idx + span_count - 1, level)))
 
-            # Get column config to apply background
-            report_config = self.config.get("reports", [{}])[0]
-            columns_config = report_config.get("columns", [])
-            column_config = next((col for col in columns_config if col.get("header") == header), None)
-            bg_color = column_config.get("bg_color") if column_config and "bg_color" in column_config else None
+            report_config = self.config.get('reports', [{}])[0]
+            columns_config = report_config.get('columns', [])
 
-            # Determine default background color
-            default_bg = colors.HexColor("#D3D3F3") if level == 0 else colors.HexColor("#DCE6F2")
+            column_config = next((col for col in columns_config if col.get('header') == header), None)
+            bg_color = column_config.get('bg_color') if column_config else None
 
-            # Skip applying background to blank top-level headers
-            if not (level == 0 and col_idx < empty_column and header == ""):
-                header_styles.append(('BACKGROUND', (col_idx, level), (col_idx + span_count - 1, level), bg_color or default_bg))
-
-            # Style text
-            header_styles.append(('TEXTCOLOR', (col_idx, level), (col_idx + span_count - 1, level), colors.white))
-            header_styles.append(('FONTNAME', (col_idx, level), (col_idx + span_count - 1, level), 'Helvetica-Bold'))
-            header_styles.append(('ALIGN', (col_idx, level), (col_idx + span_count - 1, level), 'CENTER'))
-            header_styles.append(('VALIGN', (col_idx, level), (col_idx + span_count - 1, level), 'MIDDLE'))
-
-            # Remove left and top borders for empty top-level headers
-            if level == 0 and col_idx < empty_column and header == "":
-                header_styles.append(('LINEABOVE', (col_idx, level), (col_idx + span_count - 1, level), 0, colors.white))
-                header_styles.append(('LINEBEFORE', (col_idx, level), (col_idx + span_count - 1, level), 0, colors.white))
-
+            if header != "":
+                header_styles.append(('BACKGROUND', (col_idx, level), (col_idx + span_count - 1, level), colors.HexColor(bg_color or "#DDE3F0")))
+                header_styles.append(('TEXTCOLOR', (col_idx, level), (col_idx + span_count - 1, level), colors.black))
+                header_styles.append(('FOREGROUND', (col_idx, level), (col_idx + span_count - 1, level), colors.black))
+                header_styles.append(('ALIGN', (col_idx, level), (col_idx + span_count - 1, level), 'CENTER'))
+                if no_top_border_columns and header in no_top_border_columns and level == 0:
+                    header_styles.append(('LINEABOVE', (col_idx, level), (col_idx + span_count - 1, level), 0, colors.white))
             col_idx += span_count
 
         table_data.append(row)
 
-    header_styles.append(('GRID', (0, 0), (-1, -1), 0.25, colors.gray))
     return table_data, header_styles
+
 
 
 
