@@ -1,3 +1,7 @@
+from reportlab.lib import colors
+from reportlab.platypus import Paragraph
+from reportlab.lib.styles import getSampleStyleSheet
+
 def prepare_table_data(self, report_column_info, dataframe, group_colors, multi_headers):
     custom_style = self.get_custom_style()
     table_data = []
@@ -6,9 +10,12 @@ def prepare_table_data(self, report_column_info, dataframe, group_colors, multi_
     num_levels = len(multi_headers)
     num_columns = len(multi_headers[-1])
 
-    report_config = self.config.get("reports", [{}])[0]
-    columns_config = report_config.get("columns", [])
-    no_top_border_columns = report_config.get("no_top_border_columns", [])
+    empty_column = 0
+    for col in multi_headers[0]:
+        if col == "":
+            empty_column += 1
+        else:
+            break
 
     for level in range(num_levels):
         headers = multi_headers[level]
@@ -20,40 +27,52 @@ def prepare_table_data(self, report_column_info, dataframe, group_colors, multi_
             header = headers[col_idx]
             span_count = 1
 
-            # Count how many times the header is repeated
-            while (col_idx + span_count < num_columns) and (headers[col_idx + span_count] == header):
+            # Skip empty top-level headers before meaningful ones
+            if col_idx < empty_column and level < num_levels - 1:
+                row.append('')
+                col_idx += 1
+                continue
+
+            # Count span (how many columns have the same header)
+            while (col_idx + span_count < num_columns and
+                   headers[col_idx + span_count] == header):
                 span_count += 1
 
-            # Append header text
-            row.append(Paragraph(f"<b>{header}</b>", custom_style))
+            while len(row) <= col_idx:
+                row.append('')
 
-            # Set background color based on header level
+            row[col_idx] = Paragraph(f"<b>{header}</b>", custom_style)
+
+            # Background colors for first and second header levels
             if level == 0:
-                bg_color = colors.HexColor("#DDEBF7")  # light purple for first-level
+                bg_color = colors.HexColor("#A4BFEF")  # light blue
+                if header.strip() != "":
+                    styles.append(('LINEABOVE', (col_idx, level), (col_idx + span_count - 1, level), 0.5, colors.black))
             else:
-                bg_color = colors.HexColor("#B4C6E7")  # blue for second-level
+                bg_color = colors.HexColor("#C9C3E6")  # light purple
 
-            # Apply span
+            styles.append(('BACKGROUND', (col_idx, level), (col_idx + span_count - 1, level), bg_color))
+
+            # Span
             if span_count > 1:
                 styles.append(('SPAN', (col_idx, level), (col_idx + span_count - 1, level)))
 
-            # Apply background
-            styles.append(('BACKGROUND', (col_idx, level), (col_idx + span_count - 1, level), bg_color))
-            styles.append(('TEXTCOLOR', (col_idx, level), (col_idx + span_count - 1, level), colors.white))
+            # Grid and alignment
             styles.append(('ALIGN', (col_idx, level), (col_idx + span_count - 1, level), 'CENTER'))
-
-            # Handle removal of top border for certain columns on second-level only
-            if level == 1:
-                col_header = header.strip()
-                if col_header in no_top_border_columns:
-                    styles.append(('LINEABOVE', (col_idx, level), (col_idx + span_count - 1, level), 0.0, colors.white))
+            styles.append(('VALIGN', (col_idx, level), (col_idx + span_count - 1, level), 'MIDDLE'))
 
             col_idx += span_count
 
         table_data.append(row)
         header_styles.extend(styles)
 
+    # Now the data rows
+    for _, data_row in dataframe.iterrows():
+        row = [Paragraph(str(data_row.get(col['column'], '')), custom_style) for col in report_column_info]
+        table_data.append(row)
+
     return table_data, header_styles
+
 
 def create_table_style(self, style_config):
     style = TableStyle([
