@@ -10,7 +10,14 @@ def prepare_table_data(self, report_column_info, dataframe, group_colors, multi_
         name="WhiteHeaderStyle",
         parent=custom_style,
         textColor=colors.white,
-        alignment=1  # 1 = center
+        alignment=1,  # center
+    )
+
+    black_text_style = ParagraphStyle(
+        name="BlackHeaderStyle",
+        parent=custom_style,
+        textColor=colors.white,
+        alignment=1,  # center
     )
 
     for level in range(num_levels):
@@ -21,34 +28,29 @@ def prepare_table_data(self, report_column_info, dataframe, group_colors, multi_
         while col_idx < num_columns:
             header = multi_headers[level][col_idx]
             span_count = 1
-            row.append('')
+            row.append('')  # prepare to fill later
 
-            # Count consecutive identical headers for merging
-            while (col_idx + span_count < num_columns and
-                   multi_headers[level][col_idx + span_count] == header):
+            # Count how many columns to merge
+            while (
+                col_idx + span_count < num_columns and
+                multi_headers[level][col_idx + span_count] == header
+            ):
                 span_count += 1
                 row.append('')
 
+            # Blank cell, no style
             if level == 0 and header == '':
                 row[col_idx] = ''
             else:
                 if level == 0:
                     row[col_idx] = Paragraph(f"<b>{header}</b>", white_text_style)
-                    style = white_text_style
+                    styles.append(('BACKGROUND', (col_idx, level), (col_idx + span_count - 1, level), colors.HexColor('#1372be')))
                 else:
-                    row[col_idx] = Paragraph(f"<b>{header}</b>", custom_style)
-                    style = custom_style
+                    row[col_idx] = Paragraph(f"<b>{header}</b>", black_text_style)
+                    styles.append(('BACKGROUND', (col_idx, level), (col_idx + span_count - 1, level), colors.HexColor('#1f2c42')))
 
-                # Background + text color (only for second level)
-                if level != 0:
-                    bg_color = "#d5dafb"
-                    styles.append(('BACKGROUND', (col_idx, level), (col_idx + span_count - 1, level), colors.HexColor(bg_color)))
-                    styles.append(('TEXTCOLOR', (col_idx, level), (col_idx + span_count - 1, level), colors.white))
-
-                # Alignment and borders (both levels)
+                styles.append(('TEXTCOLOR', (col_idx, level), (col_idx + span_count - 1, level), colors.white))
                 styles.append(('ALIGN', (col_idx, level), (col_idx + span_count - 1, level), 'CENTER'))
-                styles.append(('LINEBELOW', (col_idx, level), (col_idx + span_count - 1, level), 1, colors.black))
-                styles.append(('BOX', (col_idx, level), (col_idx + span_count - 1, level), 1, colors.black))
 
             if span_count > 1:
                 styles.append(('SPAN', (col_idx, level), (col_idx + span_count - 1, level)))
@@ -58,11 +60,9 @@ def prepare_table_data(self, report_column_info, dataframe, group_colors, multi_
         table_data.append(row)
         header_styles.extend(styles)
 
-    # Fix vertical span for blank top-level headers
-    for col_idx in range(num_columns):
-        for level in range(num_levels - 1):
-            if multi_headers[level][col_idx] == '' and multi_headers[level + 1][col_idx] != '':
-                header_styles.append(('SPAN', (col_idx, level), (col_idx, num_levels - 1)))
-                header_styles.append(('ALIGN', (col_idx, level), (col_idx, num_levels - 1), 'CENTER'))
+    # Add border and grid for headers and table
+    total_rows = len(table_data)
+    header_styles.append(('GRID', (0, 0), (num_columns - 1, total_rows - 1), 0.75, colors.black))
+    header_styles.append(('BOX', (0, 0), (num_columns - 1, total_rows - 1), 1.0, colors.black))
 
     return table_data, header_styles
