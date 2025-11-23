@@ -7,100 +7,82 @@ look into my eyes you're under
 
 
 
-I already have an ETM monitoring dashboard POC with HTML UI and mock data. Now I want to turn it into a production-style FastAPI app that:
+I already have a working ETM dashboard app in this repo:
 
-Serves the UI and APIs from a single app / single Docker container
+HTML UI (Bootstrap) running on localhost:5000
 
-Uses FastAPI for APIs and Jinja2 + static files for the UI
+Existing FastAPI endpoints and supporting code
 
-Follows the MSIM pattern similar to msim_perfattr_alfalink (e.g. src/api/routes/positions.py)
+A lot of business logic that is already wired and working
 
-Exposes APIs that can be used both by the dashboard JS and by other internal apps
+I want to extend and harden this into a production-style app without breaking what’s already working.
 
-Uses service functions in core modules as the single source of truth, with FastAPI routes as thin wrappers
+Very important constraints
 
-Architecture & constraints
+Do NOT do a big refactor.
 
-Use FastAPI, not Flask.
+Do not move a bunch of files into a new folder structure.
 
-Single app, single port, suitable for one Docker container:
+Do not rename modules or packages unless absolutely required.
 
-/ and maybe /jobs, /accounts etc. → HTML UI
+Reuse the existing FastAPI app, routers, and libraries that are already in this codebase.
 
-/static/... → JS/CSS/assets
+Any changes you propose must:
 
-/api/v1/... → JSON APIs
+Keep the current UI behaviour working exactly as it is now.
 
-Folder structure should roughly follow this shape (adapt to this repo):
+Keep existing APIs working (no breaking changes to current routes).
 
-src/
-  api/
-    routes/
-      system.py
-      overview.py
-      jobs.py
-      accounts.py
-      portfolios.py
-    models/
-      system.py
-      overview.py
-      jobs.py
-      accounts.py
-  core/
-    system_status/
-    overview/
-    jobs/
-    accounts/
-    portfolios/
-  infra/
-    db/
-    etm_runner/
-    scheduler/
-  ui/
-    templates/
-      dashboard.html
-      jobs.html
-    static/
-      js/
-        dashboard.js
-        jobs.js
+Be incremental and additive: new endpoints, new helpers, new JS, etc.
 
+If you need a “better” structure (e.g. core/, services/), introduce it gradually by:
 
-The exact names can be adjusted, but keep api/routes for FastAPI routers and core for business logic.
+Adding new modules that call existing code
 
-Follow the same style as msim_perfattr_alfalink:
+Or adding thin wrappers around current functions
+but do not move or delete existing implementation files.
 
-src/api/main.py (or similar) to build the FastAPI app and register routers
+Target architecture (incremental, not enforced by refactor)
 
-src/api/routes/*.py with APIRouter, Depends, Annotated, Query, etc.
+Single FastAPI app that:
 
-Import extractors/services from core/* instead of putting logic in routes
+Serves the UI (existing templates + static files)
 
-Business logic (monitoring, retries, job orchestration) must live in core services, not in routes:
+Exposes JSON APIs under /api/v1/... that:
 
-Example: core.jobs.service.start_batch_job(req) is the real implementation
+Are used by the dashboard JS
 
-API route just parses request → calls service → returns result
+Can also be safely used by other internal apps
 
-Internal Python code (scheduler, batch worker) should call the same services directly, without going through HTTP
+Business logic lives in plain Python functions that can be called both:
 
-API design requirements
+from FastAPI routes
 
-Design the API so that:
+and directly from other Python modules (e.g. schedulers, batch scripts)
 
-Everything is versioned under /api/v1/...
+What I need you to do
 
-Responses are pure JSON, no HTML fragments
+Inspect the current code (FastAPI app, routes, templates, static JS) and:
 
-The same API can be safely called by:
+Identify which existing APIs and functions already implement:
 
-Browser JS (dashboard)
+Overview metrics
 
-Other internal apps / services
+System status
 
-I need concrete endpoints for:
+Jobs and history
 
-Overview & monitoring
+Failed accounts and retries
+
+Identify where the UI is still using mock data / hard-coded values.
+
+Design a minimal, non-breaking API layer under /api/v1/...:
+
+Reuse existing FastAPI routers and libraries that are already in this repo.
+
+When possible, expose existing functions via new routes instead of creating new logic.
+
+Example endpoints (adjust to match current code where possible):
 
 GET /api/v1/overview?date=YYYY-MM-DD
 
@@ -110,8 +92,6 @@ GET /api/v1/status-by-team?date=...
 
 GET /api/v1/system/status
 
-Failed accounts & actions
-
 GET /api/v1/accounts/failed?date=...
 
 POST /api/v1/accounts/retry-failed?date=...
@@ -119,8 +99,6 @@ POST /api/v1/accounts/retry-failed?date=...
 POST /api/v1/accounts/process-pending?date=...
 
 POST /api/v1/accounts/{account_id}/retry
-
-Jobs & history
 
 GET /api/v1/jobs/active
 
@@ -132,76 +110,54 @@ POST /api/v1/jobs/start
 
 POST /api/v1/jobs/{job_id}/cancel
 
-Portfolios / scheduling
-
 GET /api/v1/portfolios?date=...
 
-For each endpoint, use Pydantic models for request/response where appropriate and keep the shapes UI-agnostic.
+For each endpoint, make the route a thin wrapper that calls existing or new Python functions (services) so that internal code can call the same functions directly.
 
-UI behaviour
+Wire the UI to these APIs without breaking current behaviour:
 
-The HTML dashboard (Jinja2 templates in ui/templates) should load once.
+Keep the existing templates and layout.
 
-A ui/static/js/dashboard.js file should:
+If needed, create or update a dashboard.js (or similar) file in the existing static folder to:
 
-Call the above /api/v1/... endpoints via fetch
+Call the /api/v1/... endpoints using fetch
 
-Refresh overview tiles, charts, system status, active jobs, failed accounts, etc.
+Update tiles, charts, system status, active jobs, failed accounts, etc.
 
-Use polling (e.g. every 10 seconds) for updates; do not add WebSockets for now.
+Use polling (e.g. every 10 seconds) for refresh
 
-What I want you to do (step-by-step)
+Replace mock / hard-coded UI data with API-driven values carefully, so that:
 
-Step 1 – Plan (no code changes yet)
+The visual behaviour remains the same
 
-Inspect the repo (especially the current dashboard HTML/JS and any existing FastAPI or Flask structure).
+The page still loads even if some APIs are not fully implemented yet (fallbacks where needed)
 
-Propose:
+Respect the current FastAPI setup:
 
-The final folder layout under src/ for api, core, infra, and ui, following the MSIM pattern.
+Use the same FastAPI app instance, middleware, and dependency injection patterns already in this repo.
 
-The full list of FastAPI routers and their files (e.g. src/api/routes/jobs.py with which endpoints).
+Use the same libraries already in pyproject.toml / requirements.txt.
 
-The core service modules and functions in core/* that the routes will call (e.g. core.jobs.service.start_batch_job).
+If you propose new modules (e.g. services), make them call into existing extractors/transformers instead of duplicating logic.
 
-Show how the main FastAPI app will be instantiated:
+How to respond
 
-App factory (e.g. src/api/main.py)
+First, describe briefly:
 
-Mount UI routes (/ → dashboard template, /static → static files)
+Which existing files you will touch.
 
-Include API routers under /api/v1.
+Which new routes you will add and where.
 
-Step 2 – Implement skeleton (small, focused changes)
+Which UI pieces will switch from mock data to API calls.
 
-Create:
+Then, show concrete code changes:
 
-src/api/main.py with FastAPI app, router registration, and UI mounting.
+New or updated FastAPI routes for one or two endpoints to start (e.g. overview + system status).
 
-src/api/routes/overview.py with:
+Corresponding Python functions they call (reusing existing logic where possible).
 
-GET /api/v1/overview
+The JS changes needed to consume those endpoints.
 
-GET /api/v1/processing-timeline
+Keep the diff small and incremental so that the current app still runs after each step.
 
-core/overview/service.py with plain Python functions that return mock data for now.
-
-ui/templates/dashboard.html wired to include static/js/dashboard.js.
-
-ui/static/js/dashboard.js that calls these endpoints and updates the existing UI (tiles + 7-day chart) with polling.
-
-Keep the implementation close to the style of msim_perfattr_alfalink (use APIRouter, Depends, Annotated, etc.).
-
-Step 3 – Extend later
-
-Once the skeleton is working, we will add the jobs/accounts/system endpoints and replace mock data with real DB/ETM calls. For now, focus on correct structure and wiring.
-
-Important:
-
-Do not introduce unnecessary extra layers or frameworks.
-
-Do not add WebSockets, Kafka, or complex infra yet.
-
-Keep diffs small and practical, and reuse existing HTML/CSS where possible.
-
-First, show me the proposed folder structure and the app / router wiring, then generate the initial code for Step 2.
+Do not propose a wholesale re-organization of the repo. Work with the current structure and extend it safely.
