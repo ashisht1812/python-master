@@ -6,6 +6,61 @@ don't look around the eyes
 look into my eyes you're under
 
 
+title AlfaDash – Simple Architecture (Phase 1)
+
+// Groups & Components
+
+Clients [icon: users] {
+  Dashboard UI [icon: monitor, label: "Dashboard UI (Browser)"]
+}
+
+FastAPI App [icon: cloud] {
+  FastAPI Server [icon: cloud]
+  UI Templates [icon: layout-template, label: "Jinja2"]
+  Static Files [icon: file-code, label: "JS/CSS"]
+  API Endpoints [icon: share-2, label: "/api/v1/*"]
+}
+
+Domain Logic [icon: layers] {
+  Overview Service [icon: activity]
+  Jobs Service [icon: play-circle]
+  Accounts Service [icon: repeat]
+  System Status Service [icon: heartbeat]
+}
+
+Infrastructure [icon: server] {
+  ETM Batch Runner [icon: cpu]
+  Jobs Accounts Database [icon: database, label: "SnowFlake (Jobs & Accounts)"]
+}
+
+FactSet [icon: cloud] {
+  Upstream ETM Sources [icon: server]
+}
+
+// Connections
+
+Dashboard UI > UI Templates
+Dashboard UI > Static Files
+Dashboard UI > API Endpoints
+
+API Endpoints > Overview Service
+API Endpoints > Jobs Service
+API Endpoints > Accounts Service
+API Endpoints > System Status Service
+
+Overview Service > Jobs Accounts Database
+Jobs Service > ETM Batch Runner
+Jobs Service > Jobs Accounts Database
+Accounts Service > ETM Batch Runner
+Accounts Service > Jobs Accounts Database
+System Status Service > Jobs Accounts Database
+System Status Service > Upstream ETM Sources
+
+ETM Batch Runner > Jobs Accounts Database
+
+
+
+
 
 In this repo we already have a working FastAPI setup and a positions service, similar to the pattern in src/api/routes/positions.py and the related extractor/transformer modules.
 I want to extend this in a minimal, non-breaking way:
