@@ -4,3 +4,203 @@ the eyes the eyes the eyes
 not around the eyes 
 don't look around the eyes
 look into my eyes you're under
+
+
+title AlfaDash – Simple Architecture (Phase 1)
+
+// Groups & Components
+
+Clients [icon: users] {
+  Dashboard UI [icon: monitor, label: "Dashboard UI (Browser)"]
+}
+
+FastAPI App [icon: cloud] {
+  FastAPI Server [icon: cloud]
+  UI Templates [icon: layout-template, label: "Jinja2"]
+  Static Files [icon: file-code, label: "JS/CSS"]
+  API Endpoints [icon: share-2, label: "/api/v1/*"]
+}
+
+Domain Logic [icon: layers] {
+  Overview Service [icon: activity]
+  Jobs Service [icon: play-circle]
+  Accounts Service [icon: repeat]
+  System Status Service [icon: heartbeat]
+}
+
+Infrastructure [icon: server] {
+  ETM Batch Runner [icon: cpu]
+  Jobs Accounts Database [icon: database, label: "SnowFlake (Jobs & Accounts)"]
+}
+
+FactSet [icon: cloud] {
+  Upstream ETM Sources [icon: server]
+}
+
+// Connections
+
+Dashboard UI > UI Templates
+Dashboard UI > Static Files
+Dashboard UI > API Endpoints
+
+API Endpoints > Overview Service
+API Endpoints > Jobs Service
+API Endpoints > Accounts Service
+API Endpoints > System Status Service
+
+Overview Service > Jobs Accounts Database
+Jobs Service > ETM Batch Runner
+Jobs Service > Jobs Accounts Database
+Accounts Service > ETM Batch Runner
+Accounts Service > Jobs Accounts Database
+System Status Service > Jobs Accounts Database
+System Status Service > Upstream ETM Sources
+
+ETM Batch Runner > Jobs Accounts Database
+
+
+
+
+
+In this repo we already have a working FastAPI setup and a positions service, similar to the pattern in src/api/routes/positions.py and the related extractor/transformer modules.
+I want to extend this in a minimal, non-breaking way:
+
+Key rules (very important):
+
+Do not refactor or move existing files.
+
+Reuse the existing FastAPI app, routers, models, extractors, and services already in the codebase.
+
+No big folder reshuffles; only additive changes (new routes, new service wrappers, optional new HTML/JS files).
+
+Leverage the existing positions logic.
+
+Any new API endpoints for positions must call the existing positions service / extractor functions, not re-implement the logic.
+
+Keep everything backward compatible so all existing tests and functionality still work.
+
+Goal
+
+Focus only on positions for now and:
+
+Make sure we have a clean, documented REST API around positions under /api/v1/positions that other apps can call.
+
+Optionally add a very simple UI page (one HTML template + JS) that:
+
+Lets a user:
+
+Enter accounts / parameters and fetch positions
+
+Trigger an ETM creation for those positions (if we already have such a function)
+
+Upload a file related to positions (if there is already a file-processing flow in the codebase)
+
+Uses the same FastAPI endpoints (no separate logic).
+
+Step 1 – Analyse existing positions code
+
+Look at the existing positions route and service files, for example:
+
+src/api/routes/positions.py
+
+Any related models/extractors/transformers under core/, extractors/, or similar folders.
+
+Summarize:
+
+What the current positions API already exposes (paths, query params, response format).
+
+Which internal functions are the “real” implementation (e.g., PositionsExtractor.get_positions(...)).
+
+Based on that, propose a minimal /api/v1/positions design that:
+
+Reuses existing endpoints where possible.
+
+Adds only what’s missing to support:
+
+Fetch positions
+
+Create an ETM job for positions (if such a function already exists)
+
+Accept a file upload for positions processing (if such a flow already exists)
+
+Please list the final endpoints you propose, with:
+
+HTTP method + path (e.g., GET /api/v1/positions)
+
+Expected query/body parameters
+
+Which existing function(s) they call internally
+
+Step 2 – Implement endpoints (additive only)
+
+Based on your analysis, add or adjust routes without breaking existing ones:
+
+Ensure there is a GET /api/v1/positions endpoint that:
+
+Uses the same query parameters as the current positions implementation (e.g. accounts, asof, etc.).
+
+Calls the existing positions extractor/service internally.
+
+Returns JSON in a structure that matches what we already use internally (no UI-specific shaping).
+
+If we already have functions for ETM creation related to positions, add a thin wrapper:
+
+POST /api/v1/positions/etm (or similar) that:
+
+Accepts the necessary payload (accounts, date, options, etc.).
+
+Calls the existing ETM creation function.
+
+Returns a simple JSON result (job id, status, etc.).
+
+If we already have a file upload or file-processing flow related to positions:
+
+Add a POST /api/v1/positions/upload endpoint that:
+
+Accepts a file via UploadFile / File from FastAPI.
+
+Passes it to the existing file-handling logic.
+
+Returns a minimal JSON response (success, errors, or job id).
+
+Keep all new routes:
+
+In the existing positions routes module (or a closely related new module).
+
+As thin wrappers that delegate to existing services/extractors.
+
+Step 3 – Optional simple UI for positions (new, non-breaking)
+
+If it’s straightforward, create a very basic UI to exercise these endpoints:
+
+Add one HTML template (e.g. templates/positions.html) and a small JS file (e.g. static/js/positions.js) that:
+
+Lets the user:
+
+Input parameters and call GET /api/v1/positions to display results in a simple table.
+
+Trigger POST /api/v1/positions/etm via a button.
+
+Upload a file to POST /api/v1/positions/upload.
+
+Uses fetch calls to the FastAPI endpoints (no extra backend logic).
+
+Add a non-breaking UI route:
+
+e.g. GET /positions returning the template.
+
+Make sure this does not interfere with any existing routes.
+
+How to respond
+
+First, summarize the existing positions implementation you found and list the final endpoints you will expose under /api/v1/positions.
+
+Then show the concrete code changes:
+
+New or updated routes for positions.
+
+Any small service wrapper functions you add (if needed).
+
+The basic HTML + JS for the positions UI, if you create it.
+
+Keep all changes minimal and additive so nothing that currently works is broken.
