@@ -80,3 +80,119 @@ def prepare_table_data(self, report_column_info, dataframe, group_colors, multi_
         header_styles.append(('BACKGROUND', (col_idx, 0), (col_idx, 0), colors.white))
 
     return table_data, header_styles
+1) ShadowOps – Self‑Learning Workflow Agent
+Use Case Title
+ShadowOps – Self‑Learning Workflow Agent
+
+Problem Statement
+Across the firm, teams manually resolve thousands of recurring breaks, reconciliations, and workflow interruptions every day. The know‑how to fix these issues lives inside individual analysts’ heads and case histories, not in scalable systems, so the same patterns are re‑executed manually, slowing resolution and consuming highly skilled staff time.
+
+Potential Solution
+Introduce ShadowOps, a self‑learning workflow agent that observes how analysts resolve exceptions across systems during real work. Instead of requiring manual process mapping, it learns repeatable patterns directly from user actions, converts them into compliant, auditable workflows, and then starts executing the repetitive steps autonomously while escalating edge cases to humans.
+
+Expected Outcomes / Benefits
+
+Reduced manual effort on high‑volume, repeatable exceptions
+
+Faster and more consistent turnaround time for breaks and reconciliations
+
+Analysts freed to focus on complex, high‑value cases and risk management
+
+An expanding library of automated workflows that compounds efficiency over time
+
+Type of Use Case
+AI (including Gen & Agentic AI), Automation, Process Optimization
+
+2) AskMS / KnowBuddy – Instant Team Knowledge Agent
+(You can pick the name you like more; I’ll use AskMS here, but KnowBuddy also works.)
+
+Use Case Title
+AskMS – Instant Team Knowledge Agent
+
+Problem Statement
+Team knowledge is scattered across wikis, runbooks, dashboards, code repositories, chat threads, and incident tickets. Finding a simple answer such as “who owns this job?” or “where is this validation implemented?” often requires searching multiple tools or interrupting colleagues, which slows onboarding, troubleshooting, and day‑to‑day delivery.
+
+Potential Solution
+Introduce AskMS, a plug‑and‑play knowledge agent that teams can connect to their existing documentation, repositories, and operational logs in minutes. Colleagues can ask natural‑language questions and receive precise answers with links, owners, and relevant context drawn from their team’s real artifacts, kept up to date as the sources change.
+
+Expected Outcomes / Benefits
+
+Faster onboarding for engineers and analysts joining new teams
+
+Less time spent hunting for internal documentation or “who knows this?”
+
+Better knowledge sharing and fewer single‑point‑of‑failure experts
+
+Quicker troubleshooting and incident resolution across time zones
+
+Type of Use Case
+AI (including Gen & Agentic AI), Day to Day Assistant, Business Enablement
+
+3) CodeAtlas – Enterprise Code Discovery Agent
+Use Case Title
+CodeAtlas – Enterprise Code Discovery Agent
+
+Problem Statement
+In a large codebase, similar utilities, libraries, and business logic often get re‑implemented because developers don’t know an equivalent solution already exists. This leads to duplicated engineering effort, inconsistent implementations of the same concept, and more code to maintain and support.
+
+Potential Solution
+Introduce CodeAtlas, an enterprise code discovery agent that indexes internal repositories and understands code logic across languages. Developers can describe what they need in plain language or sample code, and CodeAtlas surfaces existing implementations, reusable libraries, shared patterns, and related design docs anywhere in the firm.
+
+Expected Outcomes / Benefits
+
+Reduced duplication of utilities and core business logic
+
+Faster development by reusing proven internal components
+
+More consistent implementations of cross‑cutting concerns (logging, security, calculations, etc.)
+
+Better visibility into “what already exists” for architects and tech leads
+
+Type of Use Case
+AI (including Gen & Agentic AI), Technology Enablement (SDLC, DevOps, SRE)
+
+4) LivingDocs – Self‑Maintaining System Documentation
+Use Case Title
+LivingDocs – Self‑Maintaining System Documentation
+
+Problem Statement
+System documentation quickly becomes stale because it relies on manual updates. Engineers often depend on tribal knowledge and reverse‑engineering to understand architecture, dependencies, and operational procedures, which slows onboarding and incident response and increases operational risk.
+
+Potential Solution
+Introduce LivingDocs, a platform that continuously analyzes code repositories, pipelines, infrastructure definitions, and logs to automatically generate and refresh system documentation. It keeps architecture diagrams, dependency maps, API descriptions, and key runbooks current as systems evolve, without relying on manual editing.
+
+Expected Outcomes / Benefits
+
+Always‑up‑to‑date technical documentation for services and jobs
+
+Faster onboarding and handover between teams and regions
+
+Quicker and more accurate troubleshooting during incidents and change windows
+
+Reduced reliance on a few experts for “how this really works” knowledge
+
+Type of Use Case
+Technology Enablement (SDLC, DevOps, SRE), Process Optimization
+
+5) OneClick Compliance – Automated Project Compliance Setup
+Use Case Title
+OneClick Compliance – Automated Project Compliance Setup
+
+Problem Statement
+Every project must adhere to firm‑wide standards for CI/CD, security checks, monitoring, scheduling, and release processes. Today, teams configure these controls manually, which takes time, introduces variation between implementations, and often triggers lengthy review cycles when standards are not fully met.
+
+Potential Solution
+Introduce OneClick Compliance, a system that, when a project or repository is registered, automatically provisions required enterprise controls. It generates standard CI/CD pipelines, security and quality gates, monitoring and alerting, scheduler jobs, and basic compliance documentation based on the project type and environment.
+
+Expected Outcomes / Benefits
+
+Much faster and more consistent setup of new projects and services
+
+Higher and more uniform adherence to enterprise engineering standards
+
+Reduced manual configuration and fewer back‑and‑forth review cycles
+
+Stronger operational reliability and cleaner compliance evidence for audits
+
+Type of Use Case
+Technology Enablement (SDLC, DevOps, SRE), Automation, Infrastructure, Hygiene and RTB
